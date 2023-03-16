@@ -1,0 +1,36 @@
+;; Finds external application paths
+(defun fcnAppPath (sExtension / sApp)
+    (if (= (substr sExtension 1 1) ".")(setq sExtension (substr sExtension 2)))
+    (setq sExtension (strcase sExtension T))
+    (setq sApp (cond
+        ;; Condition 1 - Cad application (DraftSight)
+        (   (member sExtension '("dwg" "dwt"))
+            (strcat (vlax-get (vlax-get-acad-object) 'PATH) "\\" 
+                (vlax-get (vlax-get-acad-object) 'NAME) ".exe"
+            );strcat
+        ); Condition 1
+        ;; Condition 2 - Microsoft Products
+        (   (vl-registry-read 
+                "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Extensions" 
+                sExtension
+            );vl-registry-read
+        ); Condition 2
+        ;; Conidtion 3 - Adobe Acrobat
+        (   (= sExtension "pdf")
+            (vl-registry-read "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\Acrobat.exe")
+        ); Condition 3
+        ;; Else -------- No match
+        (T nil)
+    ));cond<-setq
+
+    ;; Formatting results
+    (if sApp (progn
+        (setq sApp (vl-string-translate "/" "\\" sApp))
+        (while (/= (strcase (substr sApp (- (strlen sApp) 3))) ".EXE")
+            (setq sApp (substr sApp 1 (- (strlen sApp) 1)))
+        );while
+
+        ;; Returning pass/fail condition with value
+        (cons (if (findfile sApp) T) sApp)
+    ));if<-progn
+);fcnAppPath
